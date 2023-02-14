@@ -7,8 +7,8 @@ from pb_ompl import PbOMPLRobot
 class MyDonutRobot(PbOMPLRobot):
     def __init__(self, id) -> None:
         self.id = id
-        self.num_dim = 6
-        self.joint_idx=[]
+        self.num_dim = 7
+        self.joint_idx=[0]
         self.reset()
 
         self.joint_bounds = []
@@ -18,7 +18,7 @@ class MyDonutRobot(PbOMPLRobot):
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # r
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # p
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # y
-        # self.joint_bounds.append([math.radians(-180), math.radians(180)]) # joint_0
+        self.joint_bounds.append([math.radians(-0), math.radians(0)]) # joint_0
         # self.joint_bounds.append([math.radians(-180), math.radians(180)]) # joint_1
         # self.joint_bounds.append([math.radians(-180), math.radians(180)]) # joint_2
         # self.joint_bounds.append([math.radians(-180), math.radians(180)]) # joint_3
@@ -35,15 +35,15 @@ class MyDonutRobot(PbOMPLRobot):
         r = R.from_euler('zyx', state[3:6], degrees=False)
         quat = r.as_quat()
         p.resetBasePositionAndOrientation(self.id, pos, quat)
-        # self._set_joint_positions(self.joint_idx, state[3:])
+        self._set_joint_positions(self.joint_idx, [state[-1]])
 
         self.state = state
 
     def reset(self):
         p.resetBasePositionAndOrientation(self.id, [0,0,0], [0,0,0,1])
-        # self._set_joint_positions(self.joint_idx, [0,0,0,0])
+        self._set_joint_positions(self.joint_idx, [0])
         self.state = [0] * self.num_dim
 
-    # def _set_joint_positions(self, joints, positions):
-    #     for joint, value in zip(joints, positions):
-    #         p.resetJointState(self.id, joint, value, targetVelocity=0)
+    def _set_joint_positions(self, joints, positions):
+        for joint, value in zip(joints, positions):
+            p.resetJointState(self.id, joint, value, targetVelocity=0)

@@ -26,7 +26,7 @@ class DonutDemo():
 
         # setup pb_ompl
         self.pb_ompl_interface = pb_ompl.PbOMPL(self.robot, self.obstacles)
-        self.pb_ompl_interface.set_planner("RRTStar")
+        self.pb_ompl_interface.set_planner("RRTstar")
 
         # add obstacles
         self.add_obstacles()
@@ -37,7 +37,13 @@ class DonutDemo():
 
     def add_obstacles(self):
         # add box
-        self.add_box([1, 0, 0.7], [1.5, 1.5, 0.05])
+        self.add_box([0, 0, 3], [2, 2, 0.05])
+        
+        # add outer wall
+        wall1 = self.add_box([1, 0, 3.5], [0.1, 1, 1])
+        wall2 = self.add_box([-1, 0, 3.5], [0.1, 1, 1])
+        wall3 = self.add_box([0, 1, 3.5], [1, 0.1, 1])
+        wall4 = self.add_box([0, -1, 3.5], [1, 0.1, 1])
 
         # store obstacles
         self.pb_ompl_interface.set_obstacles(self.obstacles)
@@ -50,14 +56,15 @@ class DonutDemo():
         return box_id
 
     def demo(self):
-        start = [0,0,0,0,0,0] # radian for rot
-        goal = [1,1,3,0,1,0]
+        start = [0,0,4,0,1,0] # :3 pos // 3: rot [radian]
+        goal = [0,0,0,0,0,0]
 
         self.robot.set_state(start)
         res, path = self.pb_ompl_interface.plan(goal)
         if res:
             self.pb_ompl_interface.execute(path)
         return res, path
+
 
 if __name__ == '__main__':
     env = DonutDemo()
