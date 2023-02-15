@@ -29,7 +29,7 @@ class DonutDemo():
         self.goal = [0,0,0,0,0,0]
         
         # bisection search
-        self.cover_zs = np.linspace(5,4.5,numiter)
+        self.cover_zs = np.linspace(5.3,4.5,numiter)
         self.cover_z = None
         self.cage_depth = []
 
@@ -53,13 +53,6 @@ class DonutDemo():
         self.add_box([-1, 0, 3.5], [0.1, 1, .5])
         self.add_box([0, 1, 3.5], [1, 0.1, .5])
         self.add_box([0, -1, 3.5], [1, 0.1, .5])
-
-        # # add cover
-        # self.add_box([0, 0, self.cover_zs[i]], [2, 2, 0.05])
-        # self.cover_z = self.cover_zs[i]
-        
-        # # store obstacles
-        # self.pb_ompl_interface.set_obstacles(self.obstacles)
 
     def add_box(self, box_pos, half_box_size):
         colBoxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_box_size)
@@ -88,7 +81,7 @@ class DonutDemo():
 
 
 if __name__ == '__main__':
-    NUMITER = 5 # no iter of bisection search
+    NUMITER = 6 # no iter of bisection search
     env = DonutDemo(NUMITER)
     env.add_obstacles()
 
@@ -109,7 +102,7 @@ if __name__ == '__main__':
     xy = np.array(env.cage_depth)
     cover_height = xy[:,1]
     cage_depth = xy[:,0]
-    plt.plot(cover_height, cage_depth)
+    plt.plot(cover_height, cage_depth, '-o')
     plt.xlabel('cover height')
     plt.ylabel('caging depth')
     plt.title('Depth of Energy-bounded Caging in Bisection Search')

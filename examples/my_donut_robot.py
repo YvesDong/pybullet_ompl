@@ -19,9 +19,6 @@ class MyDonutRobot(PbOMPLRobot):
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # p
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # y
         self.joint_bounds.append([math.radians(-0), math.radians(0)]) # joint_0
-        # self.joint_bounds.append([math.radians(-180), math.radians(180)]) # joint_1
-        # self.joint_bounds.append([math.radians(-180), math.radians(180)]) # joint_2
-        # self.joint_bounds.append([math.radians(-180), math.radians(180)]) # joint_3
 
     def get_joint_bounds(self):
         return self.joint_bounds

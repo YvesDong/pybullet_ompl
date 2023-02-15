@@ -237,7 +237,11 @@ class PbOMPL():
             # print(sol_path_list)
             for sol_path in sol_path_list:
                 self.is_state_valid(sol_path)
-            res = True
+
+            # make sure goal is reached
+            diff = [sol_path_list[-1][i]-goal[i] for i in range(len(goal))]
+            if sum(abs(i) for i in diff) < .5:
+                res = True
         else:
             print("No solution found")
 
@@ -247,7 +251,7 @@ class PbOMPL():
 
     def plan(self, goal, allowed_time = DEFAULT_PLANNING_TIME):
         '''
-        plan a path to gaol from current robot state
+        plan a path to goal from current robot state
         '''
         start = self.robot.get_cur_state()
         return self.plan_start_goal(start, goal, allowed_time=allowed_time)
@@ -269,7 +273,6 @@ class PbOMPL():
                 self.robot.set_state(q)
             p.stepSimulation()
             time.sleep(0.01)
-
 
 
     # -------------
