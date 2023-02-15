@@ -20,7 +20,7 @@ from itertools import product
 import copy
 
 INTERPOLATE_NUM = 500
-DEFAULT_PLANNING_TIME = 5.0
+DEFAULT_PLANNING_TIME = 10.0
 
 class PbOMPLRobot():
     '''
@@ -40,7 +40,7 @@ class PbOMPLRobot():
         joint_idx = [j for j in all_joint_idx if self._is_not_fixed(j)]
         self.num_dim = len(joint_idx)
         self.joint_idx = joint_idx
-        print(self.joint_idx)
+        print('joint_idx: ', self.joint_idx)
         self.joint_bounds = []
 
         self.reset()
@@ -123,8 +123,6 @@ class PbOMPL():
         self.robot = robot
         self.robot_id = robot.id
         self.obstacles = obstacles
-        print(self.obstacles)
-
         self.space = PbStateSpace(robot.num_dim)
 
         bounds = ob.RealVectorBounds(robot.num_dim)
@@ -176,7 +174,6 @@ class PbOMPL():
         return True
 
     def setup_collision_detection(self, robot, obstacles, self_collisions = True, allow_collision_links = []):
-        print('!!!!!!!!!!!!!obstacles: ', obstacles)
         self.check_link_pairs = utils.get_self_link_pairs(robot.id, robot.joint_idx) if self_collisions else []
         moving_links = frozenset(
             [item for item in utils.get_moving_links(robot.id, robot.joint_idx) if not item in allow_collision_links])
