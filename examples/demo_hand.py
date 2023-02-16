@@ -6,32 +6,39 @@ import pybullet_data
 sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
 
 import pb_ompl
-from my_donut_robot import MyDonutRobot
 import matplotlib.pyplot as plt
 import numpy as np
+from my_donut_robot import MyDonutRobot
 
-class DonutDemo():
+class RobotiqDemo():
     def __init__(self, numiter):
         self.obstacles = []
 
         p.connect(p.GUI)
         p.setGravity(0, 0, -9.8)
         p.setTimeStep(1./240.)
-
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.loadURDF("plane.urdf")
+        # p.loadURDF("plane.urdf")
 
         # load robot
-        robot_id = p.loadURDF("models/robotiq_3f_gripper_visualization/cfg/robotiq-3f-gripper_mesh.urdf", (0,0,0))
-        # robot_id = p.loadURDF("models/robotiq_3f_gripper_visualization/cfg/robotiq-3f-gripper_articulated.urdf", (0,0,0))
-        # robot_id = p.loadURDF("models/franka_description/robots/panda_arm.urdf", (0,0,0), useFixedBase = 1)
-        self.robot = MyDonutRobot(robot_id)
-        
-        self.start = [0,0,-2,0,0,0] # :3 pos // 3: rot [radian]
-        self.goal = [0,0,-2,0,0,0]
+        # robot_id = p.loadURDF("models/robotiq_3f_gripper_visualization/cfg/robotiq-3f-gripper_mesh.urdf", (0,0,0))
+        initPos = [0,0,0]
+        initOrient = p.getQuaternionFromEuler([np.pi/2,0,0])
+        self.robot_id = p.loadURDF("models/robotiq_3f_gripper_visualization/cfg/robotiq-3f-gripper_articulated.urdf", 
+                                   initPos, initOrient, useFixedBase=1, globalScaling=4.)
+        # self.robot = pb_ompl.PbOMPLRobot(robot_id)
+
+        # load object
+        object_id = p.loadURDF("models/donut/donut.urdf", (0,0,1), globalScaling=.3)
+        self.object = MyDonutRobot(object_id)
+        self.start = [0,0,.4,0,1,0] # :3 pos // 3: rot [radian]
+        self.goal = [0,0,-.5,0,0,0]
+
+        # self.start = [0 for i in range(self.robot.num_dim)] # :12 rot [radian]
+        # self.goal = [0 for i in range(self.robot.num_dim)]
         
         # bisection search
-        self.cover_zs = np.linspace(5.3,4.5,numiter)
+        self.cover_zs = np.linspace(1.,.6,numiter)
         self.cover_z = None
         self.cage_depth = []
 
@@ -43,18 +50,19 @@ class DonutDemo():
 
     def add_cover(self, i):
         # add cover
-        self.add_box([0, 0, self.cover_zs[i]], [2, 2, 0.05])
+        self.add_box([0, 0, self.cover_zs[i]], [5, 5, 0.01])
         self.cover_z = self.cover_zs[i]
 
     def add_obstacles(self):
-        # add box
-        self.add_box([0, 0, 3], [2, 2, 0.05])
+        # add robotiq
+        self.obstacles.append(self.robot_id)
+    #     self.add_box([0, 0, 3], [2, 2, 0.05])
         
-        # add outer wall
-        self.add_box([1, 0, 3.5], [0.1, 1, .5])
-        self.add_box([-1, 0, 3.5], [0.1, 1, .5])
-        self.add_box([0, 1, 3.5], [1, 0.1, .5])
-        self.add_box([0, -1, 3.5], [1, 0.1, .5])
+    #     # add outer wall
+    #     self.add_box([1, 0, 3.5], [0.1, 1, .5])
+    #     self.add_box([-1, 0, 3.5], [0.1, 1, .5])
+    #     self.add_box([0, 1, 3.5], [1, 0.1, .5])
+    #     self.add_box([0, -1, 3.5], [1, 0.1, .5])
 
     def add_box(self, box_pos, half_box_size):
         colBoxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_box_size)
@@ -74,7 +82,7 @@ class DonutDemo():
         # plt.show()
 
     def demo(self):
-        self.robot.set_state(self.start)
+        self.object.set_state(self.start)
         res, path = self.pb_ompl_interface.plan(self.goal)
         if res:
             self.pb_ompl_interface.execute(path)
@@ -83,13 +91,13 @@ class DonutDemo():
 
 
 if __name__ == '__main__':
-    NUMITER = 1 # no iter of bisection search
-    env = DonutDemo(NUMITER)
-    # env.add_obstacles()
+    NUMITER = 5 # no iter of bisection search
+    env = RobotiqDemo(NUMITER)
+    env.add_obstacles()
 
     for i in range(NUMITER):
         # PbOMPL init once again in each loop to update collision checking
-        env.pb_ompl_interface = pb_ompl.PbOMPL(env.robot, env.obstacles)
+        env.pb_ompl_interface = pb_ompl.PbOMPL(env.object, env.obstacles)
         env.pb_ompl_interface.set_planner("RRT")
         env.add_cover(i)
         # store obstacles
@@ -102,10 +110,10 @@ if __name__ == '__main__':
 
     # visualize cover height - caging depth
     xy = np.array(env.cage_depth)
-    # cover_height = xy[:,1]
-    # cage_depth = xy[:,0]
-    # plt.plot(cover_height, cage_depth, '-o')
-    plt.plot([1], [2], '-o')
+    cover_height = xy[:,1]
+    cage_depth = xy[:,0]
+    plt.plot(cover_height, cage_depth, '-o')
+    # plt.plot([1], [2], '-o')
     plt.xlabel('cover height')
     plt.ylabel('caging depth')
     plt.title('Depth of Energy-bounded Caging in Bisection Search')
