@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class DonutDemo():
-    def __init__(self, numiter):
+    def __init__(self):
         self.obstacles = []
 
         p.connect(p.GUI)
@@ -25,34 +25,20 @@ class DonutDemo():
         robot_id = p.loadURDF("models/donut/donut.urdf", (0,0,0))
         self.robot = MyDonutRobot(robot_id)
         
-        self.start = [0,0,4,0,1,0] # :3 pos // 3: rot [radian]
+        self.start = [0,0,3,0,1,0] # :3 pos // 3: rot [radian]
         self.goal = [0,0,0,0,0,0]
         
-        # bisection search
-        self.cover_zs = np.linspace(5.3,4.5,numiter)
-        self.cover_z = None
-        self.cage_depth = []
-
-    def remove_cover(self):
-        # for obstacle in self.obstacles:
-        #     p.removeBody(obstacle)
-        p.removeBody(self.obstacles[-1])
-        self.obstacles.pop()
-
-    def add_cover(self, i):
-        # add cover
-        self.add_box([0, 0, self.cover_zs[i]], [2, 2, 0.05])
-        self.cover_z = self.cover_zs[i]
+        self.max_z_escapes = [] # successful escapes
 
     def add_obstacles(self):
         # add box
-        self.add_box([0, 0, 3], [2, 2, 0.05])
+        self.add_box([0, 0, 2], [1, 1, 0.01])
         
         # add outer wall
-        self.add_box([1, 0, 3.5], [0.1, 1, .5])
-        self.add_box([-1, 0, 3.5], [0.1, 1, .5])
-        self.add_box([0, 1, 3.5], [1, 0.1, .5])
-        self.add_box([0, -1, 3.5], [1, 0.1, .5])
+        self.add_box([1, 0, 2.5], [0.01, 1, .5])
+        self.add_box([-1, 0, 2.5], [0.01, 1, .5])
+        self.add_box([0, 1, 2.5], [1, 0.01, .5])
+        self.add_box([0, -1, 2.5], [1, 0.01, .5])
 
     def add_box(self, box_pos, half_box_size):
         colBoxId = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_box_size)
@@ -63,8 +49,10 @@ class DonutDemo():
 
     def visualize_path(self, path):
         path_z = np.array(path)[:,2]
-        depth = np.around(np.max(path_z)-path_z[0], decimals=2)
-        self.cage_depth.append([depth, self.cover_z])
+        max_z_escape = np.max(path_z)
+        self.max_z_escapes.append(max_z_escape)
+        # depth = np.around(np.max(path_z)-path_z[0], decimals=2)
+        # self.cage_depth.append([depth, self.cover_z])
         # plt.plot(path_z)
         # plt.xlabel('path node')
         # plt.ylabel('height')
@@ -77,33 +65,82 @@ class DonutDemo():
         if res:
             self.pb_ompl_interface.execute(path)
             self.visualize_path(path)
+        else:
+            self.max_z_escapes.append(np.inf)
         return res, path
 
 
 if __name__ == '__main__':
-    NUMITER = 6 # no iter of bisection search
-    env = DonutDemo(NUMITER)
+    # NUMITER = 6 # no iter of bisection search
+    env = DonutDemo()
     env.add_obstacles()
+    env.pb_ompl_interface = pb_ompl.PbOMPL(env.robot, env.obstacles)
 
-    for i in range(NUMITER):
-        # PbOMPL init once again in each loop to update collision checking
-        env.pb_ompl_interface = pb_ompl.PbOMPL(env.robot, env.obstacles)
+    zupper = env.robot.joint_bounds[2][1]
+    zlower = env.start[2]
+    eps = np.inf
+    eps_thres = 1e-2 # precision threshold
+    zus = []
+    zls = []
+    epss = []
+    idx = 0
+    itercount = []
+
+    # for i in range(NUMITER):
+    while eps > eps_thres: 
+        # data record
+        zus.append(zupper)
+        zls.append(zlower)
+        itercount.append(idx)
+
+        # set upper bound of searching
+        env.pb_ompl_interface.reset_robot_state_bound()
         env.pb_ompl_interface.set_planner("RRT")
-        env.add_cover(i)
-        # store obstacles
-        env.pb_ompl_interface.set_obstacles(env.obstacles)
+        
+        # start planning
         env.demo()
-        env.remove_cover()
-        print("obstacles: ", env.obstacles)
-        print('cage_depth: ', env.cage_depth)
+        
+        # update bounds
+        curr_max_z = env.max_z_escapes[-1]
+        if curr_max_z == np.inf: # no solution
+            zlower = zupper
+            zupper = np.min(env.max_z_escapes) # except infs, the target z is monotonically decreasing
+        else:
+            zupper = (curr_max_z-zlower) / 2. + zlower
+            zlower = zlower
+        eps = abs(zupper - zlower)
+        
+        # reset z upper bound
+        env.robot.set_bisec_thres(zupper)
+        idx += 1
+
+        epss.append(eps)
+        print("----------max_z_escapes: ", env.max_z_escapes)
+        print('----------zupper, zlower, eps: ', zupper, zlower, eps)
+        print("----------joint_bounds z: ", env.robot.joint_bounds[2])
+
+    # shut down pybullet (GUI)
     p.disconnect()
 
-    # visualize cover height - caging depth
-    xy = np.array(env.cage_depth)
-    cover_height = xy[:,1]
-    cage_depth = xy[:,0]
-    plt.plot(cover_height, cage_depth, '-o')
-    plt.xlabel('cover height')
-    plt.ylabel('caging depth')
-    plt.title('Depth of Energy-bounded Caging in Bisection Search')
+    # visualize the convergence of caging depth
+    escape_zs = [[i, esc] for i, esc in enumerate(env.max_z_escapes) if esc!=np.inf] # no infs
+    escape_zs = np.array(escape_zs)
+    iters, escs = escape_zs[:,0], escape_zs[:,1]
+    esc = env.max_z_escapes
+    
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    ax1.plot(iters, escs, '-ro', label='max_z successful escapes') # max z's along successful escape paths
+    ax1.plot(itercount, zus, '-b*', label='upper bounds')
+    ax1.plot(itercount, zls, '--b*', label='lower bounds')
+    ax2.plot(itercount, epss, '-g.', label='convergence epsilon')
+    ax1.axhline(y=env.start[2], color='k', alpha=.3, linestyle='--', label='init_z object')
+    
+    ax1.set_xlabel('# iterations')
+    ax1.set_ylabel('z_world')
+    ax1.grid(True)
+    ax2.set_ylabel('bound bandwidth')
+    ax2.set_yscale('log')
+    ax1.legend(), ax2.legend(loc='lower right')
+    plt.title('Iterative bisection search of caging depth')
     plt.show()

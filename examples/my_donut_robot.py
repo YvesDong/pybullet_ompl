@@ -12,14 +12,17 @@ class MyDonutRobot(PbOMPLRobot):
         self.reset()
 
         self.joint_bounds = []
-        self.joint_bounds.append([-5, 5]) # x
-        self.joint_bounds.append([-5, 5]) # y
-        self.joint_bounds.append([-5, 5]) # z
+        self.joint_bounds.append([-2, 2]) # x
+        self.joint_bounds.append([-2, 2]) # y
+        self.joint_bounds.append([0, 4]) # z
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # r
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # p
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # y
         self.joint_bounds.append([math.radians(-0), math.radians(0)]) # joint_0
 
+    def set_bisec_thres(self, zmax):
+        self.joint_bounds[2][1] = zmax
+        
     def get_joint_bounds(self):
         return self.joint_bounds
 

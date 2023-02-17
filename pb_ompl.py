@@ -20,7 +20,7 @@ from itertools import product
 import copy
 
 INTERPOLATE_NUM = 500
-DEFAULT_PLANNING_TIME = 10.0
+DEFAULT_PLANNING_TIME = 30.0
 
 class PbOMPLRobot():
     '''
@@ -124,8 +124,10 @@ class PbOMPL():
         self.robot_id = robot.id
         self.obstacles = obstacles
         self.space = PbStateSpace(robot.num_dim)
+        self.set_obstacles(self.obstacles)
 
-        bounds = ob.RealVectorBounds(robot.num_dim)
+    def reset_robot_state_bound(self):
+        bounds = ob.RealVectorBounds(self.robot.num_dim)
         joint_bounds = self.robot.get_joint_bounds()
         for i, bound in enumerate(joint_bounds):
             bounds.setLow(i, bound[0])
@@ -139,8 +141,7 @@ class PbOMPL():
         # self.collision_fn = pb_utils.get_collision_fn(self.robot_id, self.robot.joint_idx, self.obstacles, [], True, set(),
         #                                                 custom_limits={}, max_distance=0, allow_collision_links=[])
 
-        self.set_obstacles(obstacles)
-        self.set_planner("RRT") # RRT by default
+        # self.set_planner("RRT") # RRT by default
 
     def set_obstacles(self, obstacles):
         self.obstacles = obstacles
@@ -204,9 +205,9 @@ class PbOMPL():
 
         self.ss.setPlanner(self.planner)
 
-    def plan_start_goal(self, start, goal, allowed_time = DEFAULT_PLANNING_TIME):
+    def plan_start_goal(self, start, goal, allowed_time=DEFAULT_PLANNING_TIME, reached_thres=.5):
         '''
-        plan a path to gaol from the given robot start state
+        plan a path to goal from the given robot start state
         '''
         print("start_planning")
         print(self.planner.params())
@@ -240,7 +241,7 @@ class PbOMPL():
 
             # make sure goal is reached
             diff = [sol_path_list[-1][i]-goal[i] for i in range(len(goal))]
-            if sum(abs(i) for i in diff) < .5:
+            if sum(abs(i) for i in diff) < reached_thres:
                 res = True
         else:
             print("No solution found")
