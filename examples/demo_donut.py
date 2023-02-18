@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class DonutDemo():
-    def __init__(self):
+    def __init__(self, eps_thres=1e-2):
         self.obstacles = []
 
         p.connect(p.GUI)
@@ -29,13 +29,11 @@ class DonutDemo():
         self.goal = [0,0,0,0,0,0]
         
         self.max_z_escapes = [] # successful escapes
+        self.eps_thres = eps_thres # threshold of search resolution
 
     def add_obstacles(self):
-        # add box
-        self.add_box([0, 0, 2], [1, 1, 0.01])
-        
-        # add outer wall
-        self.add_box([1, 0, 2.5], [0.01, 1, .5])
+        self.add_box([0, 0, 2], [1, 1, 0.01]) # add bottom
+        self.add_box([1, 0, 2.5], [0.01, 1, .5]) # add outer walls
         self.add_box([-1, 0, 2.5], [0.01, 1, .5])
         self.add_box([0, 1, 2.5], [1, 0.01, .5])
         self.add_box([0, -1, 2.5], [1, 0.01, .5])
@@ -69,78 +67,91 @@ class DonutDemo():
             self.max_z_escapes.append(np.inf)
         return res, path
 
+    def find_height_thres_escape(self):
+        '''Iteratively find the (lowest) threshold of z upper bound that allows a escaping path'''
+
+        zupper = self.robot.joint_bounds[2][1]
+        zlower = self.start[2]
+        eps = np.inf
+        self.zus, self.zls, self.epss = [], [], []
+        idx = 0
+        self.itercount = []
+
+        # for i in range(NUMITER):
+        while eps > self.eps_thres: 
+            # data record
+            self.zus.append(zupper)
+            self.zls.append(zlower)
+            self.itercount.append(idx)
+
+            # set upper bound of searching
+            self.pb_ompl_interface.reset_robot_state_bound()
+            self.pb_ompl_interface.set_planner("RRT")
+            
+            # start planning
+            self.demo()
+            
+            # update bounds
+            curr_max_z = self.max_z_escapes[-1]
+            if curr_max_z == np.inf: # no solution
+                zlower = zupper
+                zupper = np.min(self.max_z_escapes) # except infs, the target z is monotonically decreasing
+            else: # solution found
+                zupper = (curr_max_z-zlower) / 2. + zlower # greedily search the lower half bounded by current solution
+                # zlower = zlower
+            eps = abs(zupper - zlower)
+            
+            # reset z upper bound
+            self.robot.set_bisec_thres(zupper)
+            idx += 1
+
+            self.epss.append(eps)
+            print("----------max_z_escapes: ", self.max_z_escapes)
+            print('----------zupper, zlower, eps: ', zupper, zlower, eps)
+            print("----------joint_bounds z: ", self.robot.joint_bounds[2])
+
+        # shut down pybullet (GUI)
+        p.disconnect()
+
+    def visualize_bisec_search(self):
+        '''visualize the convergence of caging depth'''
+
+        escape_zs = [[i, esc] for i, esc in enumerate(self.max_z_escapes) if esc!=np.inf] # no infs
+        escape_zs = np.array(escape_zs)
+        escape_energy = escape_zs[-1, 1] - self.start[2] # minimum escape_energy
+        z_thres = escape_zs[-1, 1]
+        iters, escs = escape_zs[:,0], escape_zs[:,1]
+        
+        _, ax1 = plt.subplots()
+        ax1.plot(iters, escs, '-ro', label='max_z successful escapes') # max z's along successful escape paths
+        ax1.plot(self.itercount, self.zus, '-b*', label='upper bounds')
+        ax1.plot(self.itercount, self.zls, '--b*', label='lower bounds')
+        ax1.axhline(y=self.start[2], color='k', alpha=.3, linestyle='--', label='init_z object')
+        ax1.set_xlabel('# iterations')
+        ax1.set_ylabel('z_world')
+        ax1.grid(True)
+        ax1.legend()
+
+        ax2 = ax1.twinx()
+        ax2.plot(self.itercount, self.epss, '-g.', label='convergence epsilon')
+        ax2.axhline(y=self.eps_thres, color='k', alpha=.7, linestyle='--', label='search resolution')
+        ax2.set_ylabel('bound bandwidth')
+        ax2.set_yscale('log')
+        ax2.legend(loc='lower right')
+
+        plt.title('Iterative bisection search of caging depth')
+        plt.show()
+
+        return escape_energy, z_thres
 
 if __name__ == '__main__':
-    # NUMITER = 6 # no iter of bisection search
-    env = DonutDemo()
+    env = DonutDemo(eps_thres=1e-3)
     env.add_obstacles()
     env.pb_ompl_interface = pb_ompl.PbOMPL(env.robot, env.obstacles)
 
-    zupper = env.robot.joint_bounds[2][1]
-    zlower = env.start[2]
-    eps = np.inf
-    eps_thres = 1e-2 # precision threshold
-    zus = []
-    zls = []
-    epss = []
-    idx = 0
-    itercount = []
+    # iterative height threshold search
+    env.find_height_thres_escape()
 
-    # for i in range(NUMITER):
-    while eps > eps_thres: 
-        # data record
-        zus.append(zupper)
-        zls.append(zlower)
-        itercount.append(idx)
-
-        # set upper bound of searching
-        env.pb_ompl_interface.reset_robot_state_bound()
-        env.pb_ompl_interface.set_planner("RRT")
-        
-        # start planning
-        env.demo()
-        
-        # update bounds
-        curr_max_z = env.max_z_escapes[-1]
-        if curr_max_z == np.inf: # no solution
-            zlower = zupper
-            zupper = np.min(env.max_z_escapes) # except infs, the target z is monotonically decreasing
-        else:
-            zupper = (curr_max_z-zlower) / 2. + zlower
-            zlower = zlower
-        eps = abs(zupper - zlower)
-        
-        # reset z upper bound
-        env.robot.set_bisec_thres(zupper)
-        idx += 1
-
-        epss.append(eps)
-        print("----------max_z_escapes: ", env.max_z_escapes)
-        print('----------zupper, zlower, eps: ', zupper, zlower, eps)
-        print("----------joint_bounds z: ", env.robot.joint_bounds[2])
-
-    # shut down pybullet (GUI)
-    p.disconnect()
-
-    # visualize the convergence of caging depth
-    escape_zs = [[i, esc] for i, esc in enumerate(env.max_z_escapes) if esc!=np.inf] # no infs
-    escape_zs = np.array(escape_zs)
-    iters, escs = escape_zs[:,0], escape_zs[:,1]
-    esc = env.max_z_escapes
-    
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
-    ax1.plot(iters, escs, '-ro', label='max_z successful escapes') # max z's along successful escape paths
-    ax1.plot(itercount, zus, '-b*', label='upper bounds')
-    ax1.plot(itercount, zls, '--b*', label='lower bounds')
-    ax2.plot(itercount, epss, '-g.', label='convergence epsilon')
-    ax1.axhline(y=env.start[2], color='k', alpha=.3, linestyle='--', label='init_z object')
-    
-    ax1.set_xlabel('# iterations')
-    ax1.set_ylabel('z_world')
-    ax1.grid(True)
-    ax2.set_ylabel('bound bandwidth')
-    ax2.set_yscale('log')
-    ax1.legend(), ax2.legend(loc='lower right')
-    plt.title('Iterative bisection search of caging depth')
-    plt.show()
+    # visualization
+    escape_energy, z_thres = env.visualize_bisec_search()
+    print('final z threshold: {}, escape energy: {}'.format(escape_energy, z_thres))
