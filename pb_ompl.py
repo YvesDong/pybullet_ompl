@@ -178,7 +178,9 @@ class PbOMPL():
         self.check_link_pairs = utils.get_self_link_pairs(robot.id, robot.joint_idx) if self_collisions else []
         moving_links = frozenset(
             [item for item in utils.get_moving_links(robot.id, robot.joint_idx) if not item in allow_collision_links])
-        moving_bodies = [(robot.id, moving_links)]
+        moving_bodies = [robot.id] # for deformable ball
+        # moving_bodies = [(robot.id, moving_links)] # original 
+        print('moving_bodies: ', moving_bodies)
         self.check_body_pairs = list(product(moving_bodies, obstacles))
 
     def set_planner(self, planner_name):
