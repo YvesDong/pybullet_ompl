@@ -27,22 +27,22 @@ class SoftBallDemo():
 
         # load object
         # p.loadURDF("plane.urdf")
-        # ballId = p.loadSoftBody("models/deformable_ball/ball.obj", simFileName = "models/deformable_ball/ball.vtk", 
-        #                         basePosition = self.startPos, scale = 0.5, mass = 4, useNeoHookean = 1, NeoHookeanMu = 400, useFaceContact=1,
-        #                         NeoHookeanLambda = 600, NeoHookeanDamping = 0.001, useSelfCollision = 1, frictionCoeff = .5, collisionMargin = 0.01)
-        ballId = p.loadSoftBody("models/deformable_ball/ball.obj",
-                                collisionMargin=.01,
-                                scale=.5,
-                                mass=3,
-                                useNeoHookean=0,
-                                useBendingSprings=1,
-                                useMassSpring=1,
-                                springElasticStiffness=40,
-                                springDampingStiffness=0.1,
-                                springDampingAllDirections=0,
-                                useSelfCollision=1,
-                                frictionCoeff=1.0,
-                                useFaceContact=1,)
+        ballId = p.loadSoftBody("models/deformable_ball/ball.obj", simFileName = "models/deformable_ball/ball.vtk", 
+                                basePosition = self.startPos, scale = 0.5, mass = 4, useNeoHookean = 1, NeoHookeanMu = 400, useFaceContact=1,
+                                NeoHookeanLambda = 600, NeoHookeanDamping = 0.001, useSelfCollision = 1, frictionCoeff = .5, collisionMargin = 0.01)
+        # ballId = p.loadSoftBody("models/deformable_ball/ball.obj",
+        #                         collisionMargin=.001,
+        #                         scale=.5,
+        #                         mass=3,
+        #                         useNeoHookean=0,
+        #                         useBendingSprings=1,
+        #                         useMassSpring=1,
+        #                         springElasticStiffness=40,
+        #                         springDampingStiffness=0.1,
+        #                         springDampingAllDirections=0,
+        #                         useSelfCollision=1,
+        #                         frictionCoeff=1.0,
+        #                         useFaceContact=1,)
         # boxId = p.loadURDF("cube.urdf", [0,0,1],useMaximalCoordinates = True)
         # ballId = p.loadURDF("models/deformable_ball/ball.urdf", [0,1,0.2], flags=p.URDF_USE_SELF_COLLISION)
         self.robot = SoftBall(ballId)
@@ -176,6 +176,6 @@ if __name__ == '__main__':
 
     # visualization
     escape_energy, z_thres = env.visualize_bisec_search()
-    print('final z threshold: {}, escape energy: {}'.format(escape_energy, z_thres))
+    print('final z threshold: {}, escape energy: {}'.format(z_thres, escape_energy))
 
     # TODO: comapare the results with ground truth (Open3d OBB - donut model)

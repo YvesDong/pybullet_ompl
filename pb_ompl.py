@@ -271,7 +271,7 @@ class PbOMPL():
         for q in path:
             if dynamics:
                 for i in range(self.robot.num_dim):
-                    p.setJointMotorControl2(self.robot.id, i, p.POSITION_CONTROL, q[i],force=5 * 240.)
+                    p.setJointMotorControl2(self.robot.id, i, p.POSITION_CONTROL, q[i],force=.005 * 240.)
             else:
                 self.robot.set_state(q)
             p.stepSimulation()
