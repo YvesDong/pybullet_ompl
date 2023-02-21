@@ -20,7 +20,7 @@ from itertools import product
 import copy
 
 INTERPOLATE_NUM = 500
-DEFAULT_PLANNING_TIME = 30.0
+DEFAULT_PLANNING_TIME = 20.0
 
 class PbOMPLRobot():
     '''
@@ -270,8 +270,35 @@ class PbOMPL():
         '''
         for q in path:
             if dynamics:
-                for i in range(self.robot.num_dim):
-                    p.setJointMotorControl2(self.robot.id, i, p.POSITION_CONTROL, q[i],force=.005 * 240.)
+                # for i in range(self.robot.num_dim):
+                #     p.setJointMotorControl2(self.robot.id, i, p.POSITION_CONTROL, q[i], force=5*240.)
+
+                # TODO: if not tunable, try pybullet constraint/anchor
+                # Set up a PD controller to control the velocity of the center of mass
+                kp = 1
+                kd = 0.1
+                max_force = 100.0
+                base_link_id = 0
+                target_pos = q[:3]
+
+                # Get the current position of the center of mass
+                current_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
+
+                # Calculate the velocity error
+                vel_error = [(target_pos[i]-current_pos[i]) * kp for i in range(3)]
+
+                # Get the current linear and angular velocities of the base link
+                linear_vel, angular_vel = p.getBaseVelocity(self.robot_id)
+
+                # Calculate the desired linear velocity
+                linear_vel_desired = [vel_error[i] - kd * linear_vel[i] for i in range(3)]
+
+                # Calculate the force required to achieve the desired velocity
+                force = [max(min(max_force, linear_vel_desired[i]), -max_force) for i in range(3)]
+                print('!!!!!!!force', force)
+                # Apply the force to the base link of the robot
+                p.applyExternalForce(self.robot_id, base_link_id, force, [0, 0, 0], p.WORLD_FRAME)
+            
             else:
                 self.robot.set_state(q)
             p.stepSimulation()

@@ -8,7 +8,7 @@ class SoftBall(PbOMPLRobot):
     def __init__(self, id) -> None:
         self.id = id
         # self.num_dim = 4
-        self.num_dim = 7
+        self.num_dim = 6
         self.joint_idx=[]
         # self.reset()
 
@@ -19,7 +19,7 @@ class SoftBall(PbOMPLRobot):
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # r
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # p
         self.joint_bounds.append([math.radians(-180), math.radians(180)]) # y
-        self.joint_bounds.append([math.radians(-0), math.radians(0)]) # joint_0
+        # self.joint_bounds.append([math.radians(-0), math.radians(0)]) # joint_0
 
     def set_bisec_thres(self, zmax):
         self.joint_bounds[2][1] = zmax
@@ -35,13 +35,13 @@ class SoftBall(PbOMPLRobot):
         r = R.from_euler('zyx', state[3:6], degrees=False)
         quat = r.as_quat()
         p.resetBasePositionAndOrientation(self.id, pos, quat)
-        self._set_joint_positions(self.joint_idx, [state[-1]])
+        # self._set_joint_positions(self.joint_idx, [state[-1]])
 
         self.state = state
 
     def reset(self):
         p.resetBasePositionAndOrientation(self.id, [0,0,0], [0,0,0,1])
-        self._set_joint_positions(self.joint_idx, [0])
+        # self._set_joint_positions(self.joint_idx, [0])
         self.state = [0] * self.num_dim
 
     def _set_joint_positions(self, joints, positions):

@@ -16,8 +16,8 @@ class SoftBallDemo():
         self.obstacles = []
         self.max_z_escapes = [] # successful escapes
         self.eps_thres = eps_thres # threshold of search resolution
-        self.startPos = [0,0,3] # :3 pos // 3: rot [radian]
         self.start = [0,0,3,0,0,0] # :3 pos // 3: rot [radian]
+        self.startPos = self.start[:3] # :3 pos // 3: rot [radian]
         self.goal = [0,0,0,0,0,0]
 
         physicsClientId = p.connect(p.GUI)
@@ -82,7 +82,7 @@ class SoftBallDemo():
         self.robot.set_state(self.start)
         res, path = self.pb_ompl_interface.plan(self.goal)
         if res:
-            self.pb_ompl_interface.execute(path)
+            self.pb_ompl_interface.execute(path, dynamics=True)
             self.visualize_path(path)
         else:
             self.max_z_escapes.append(np.inf)
