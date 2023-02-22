@@ -44,11 +44,9 @@ def any_link_pair_collision(body1, links1, body2, links2=None, **kwargs):
     return False
 
 def body_collision(body1, body2, max_distance=MAX_DISTANCE):  # 10000
-    p.stepSimulation()
-    # if len(p.getContactPoints(bodyA=body1, bodyB=body2,)) != 0:
-        # print('!!!!getContactPoints', len(p.getContactPoints(bodyA=body1, bodyB=body2,)))
-    # return len(p.getClosestPoints(bodyA=body1, bodyB=body2, distance=max_distance)) != 0  # getContactPoints`
-    return len(p.getContactPoints(bodyA=body1, bodyB=body2,)) > 20  # getContactPoints`
+    # p.stepSimulation()
+    return len(p.getClosestPoints(bodyA=body1, bodyB=body2, distance=max_distance)) != 0  # getContactPoints`
+    # return len(p.getContactPoints(bodyA=body1, bodyB=body2,)) > 20  # getContactPoints`
 
 def get_self_link_pairs(body, joints, disabled_collisions=set(), only_moving=True):
     moving_links = get_moving_links(body, joints)

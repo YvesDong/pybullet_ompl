@@ -16,42 +16,32 @@ class SoftBallDemo():
         self.obstacles = []
         self.max_z_escapes = [] # successful escapes
         self.eps_thres = eps_thres # threshold of search resolution
-        self.start = [0,0,3,0,0,0] # :3 pos // 3: rot [radian]
+        self.start = [0,0,3] # :3 pos // 3: rot [radian]
         self.startPos = self.start[:3] # :3 pos // 3: rot [radian]
-        self.goal = [0,0,0,0,0,0]
+        self.goal = [0,0,0]
 
         physicsClientId = p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.resetSimulation(p.RESET_USE_DEFORMABLE_WORLD)
         # p.setGravity(0, 0, -9.8)
 
-        # load object
-        # p.loadURDF("plane.urdf")
-        ballId = p.loadSoftBody("models/deformable_ball/ball.obj", simFileName = "models/deformable_ball/ball.vtk", 
-                                basePosition = self.startPos, scale = 0.5, mass = 4, useNeoHookean = 1, NeoHookeanMu = 400, useFaceContact=1,
-                                NeoHookeanLambda = 600, NeoHookeanDamping = 0.001, useSelfCollision = 1, frictionCoeff = .5, collisionMargin = 0.01)
-        # ballId = p.loadSoftBody("models/deformable_ball/ball.obj",
-        #                         collisionMargin=.001,
-        #                         scale=.5,
-        #                         mass=3,
-        #                         useNeoHookean=0,
-        #                         useBendingSprings=1,
-        #                         useMassSpring=1,
-        #                         springElasticStiffness=40,
-        #                         springDampingStiffness=0.1,
-        #                         springDampingAllDirections=0,
-        #                         useSelfCollision=1,
-        #                         frictionCoeff=1.0,
-        #                         useFaceContact=1,)
-        # boxId = p.loadURDF("cube.urdf", [0,0,1],useMaximalCoordinates = True)
-        # ballId = p.loadURDF("models/deformable_ball/ball.urdf", [0,1,0.2], flags=p.URDF_USE_SELF_COLLISION)
-        self.robot = SoftBall(ballId)
-        # robot_id = p.loadURDF("models/donut/donut.urdf", (0,0,0))
-        # self.robot = MyDonutRobot(robot_id)
-
+        self.set_object_with_bead()
+        
         p.setTimeStep(1./240.)
         p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
 
+    def set_object_with_bead(self):
+        ballId = p.loadSoftBody("models/deformable_ball/ball.obj", simFileName = "models/deformable_ball/ball.vtk", 
+                                basePosition = self.startPos, scale = 0.5, mass = 4, useNeoHookean = 1, NeoHookeanMu = 400, useFaceContact=1,
+                                NeoHookeanLambda = 600, NeoHookeanDamping = 0.001, useSelfCollision = 1, frictionCoeff = .5, collisionMargin = 0.01)
+
+        # boxId = p.loadURDF("cube.urdf", [0,0,1], useMaximalCoordinates=True, globalScaling=.1)
+        # p.loadURDF("plane.urdf")
+        # ballId = p.loadURDF("models/deformable_ball/ball.urdf", [0,1,0.2], flags=p.URDF_USE_SELF_COLLISION)
+        
+        # p.createSoftBodyAnchor(ballId, 0, boxId,-1, [0.5,-0.5,0])
+        self.robot = SoftBall(ballId)
+    
     def add_obstacles(self):
         self.add_box([0, 0, 2], [1, 1, 0.01]) # add bottom
         self.add_box([1, 0, 2.5], [0.01, 1, .5]) # add outer walls
@@ -82,15 +72,15 @@ class SoftBallDemo():
         self.robot.set_state(self.start)
         res, path = self.pb_ompl_interface.plan(self.goal)
         if res:
-            self.pb_ompl_interface.execute(path, dynamics=True)
+            self.pb_ompl_interface.execute(path, dynamics=False)
             self.visualize_path(path)
         else:
             self.max_z_escapes.append(np.inf)
         return res, path
 
     def find_height_thres_escape(self):
-        '''Iteratively find the (lowest) threshold of z upper bound that allows a escaping path'''
-
+        '''Iteratively find the (lowest) threshold of z upper bound that allows a escaping path
+        '''
         zupper = self.robot.joint_bounds[2][1]
         zlower = self.start[2]
         eps = np.inf
@@ -135,8 +125,8 @@ class SoftBallDemo():
         p.disconnect()
 
     def visualize_bisec_search(self):
-        '''visualize the convergence of caging depth'''
-
+        '''visualize the convergence of caging depth
+        '''
         escape_zs = [[i, esc] for i, esc in enumerate(self.max_z_escapes) if esc!=np.inf] # no infs
         escape_zs = np.array(escape_zs)
         escape_energy = escape_zs[-1, 1] - self.start[2] # minimum escape_energy
@@ -166,7 +156,6 @@ class SoftBallDemo():
         return escape_energy, z_thres
 
 if __name__ == '__main__':
-
     env = SoftBallDemo(eps_thres=1e-3)
     env.add_obstacles()
     env.pb_ompl_interface = pb_ompl.PbOMPL(env.robot, env.obstacles)
