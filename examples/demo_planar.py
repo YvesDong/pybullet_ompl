@@ -22,6 +22,7 @@ class Maze2D():
 
         # setup pb_ompl
         self.pb_ompl_interface = pb_ompl.PbOMPL(self.robot, self.obstacles)
+        self.pb_ompl_interface.reset_robot_state_bound()
         self.pb_ompl_interface.set_planner("RRT")
 
         # add obstacles
