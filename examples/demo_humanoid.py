@@ -88,7 +88,7 @@ class ArticulateDemo():
         # print('!!!!!!!!!!',p.getNumJoints(robot_id))
         # print('!!!!!!!!!!',p.getJointInfo(robot_id, i)[8:10])
 
-        self.start = [0,0,3.5,0,0,0] + self.robot.joint_bounds_mid[-self.robot.articulate_num:] # :3 pos // 3: rot [radian]
+        self.start = [0,0,3.2,0,0,0] + self.robot.joint_bounds_mid[-self.robot.articulate_num:] # :3 pos // 3: rot [radian]
         self.goal = [0,0,0,0,0,0] + self.robot.joint_bounds_mid[-self.robot.articulate_num:]
         
         self.max_z_escapes = [] # successful escapes
@@ -208,7 +208,7 @@ class ArticulateDemo():
         return escape_energy, z_thres
 
 if __name__ == '__main__':
-    env = ArticulateDemo(eps_thres=1e-1)
+    env = ArticulateDemo(eps_thres=1e-2)
     env.add_obstacles()
     env.pb_ompl_interface = pb_ompl.PbOMPL(env.robot, env.obstacles)
 

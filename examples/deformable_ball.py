@@ -18,26 +18,27 @@ def add_box(box_pos, half_box_size):
 planeOrn = [0,0,0,1]#p.getQuaternionFromEuler([0.3,0,0])
 planeId = p.loadURDF("plane.urdf", [0,0,-2],planeOrn)
 
-boxId = p.loadURDF("cube.urdf", [0,3,2],useMaximalCoordinates = True)
+# boxId = p.loadURDF("cube.urdf", [0,3,2],useMaximalCoordinates = True)
 
-basePosition = [0,0,0]
-# ballId = p.loadSoftBody("models/deformable_ball/ball.obj", 
-#                         simFileName = "models/deformable_ball/ball.vtk", 
-#                         basePosition = basePosition,
-#                         scale = 1, mass = .01, 
-#                         useNeoHookean = 1, 
-#                         NeoHookeanMu = 400, NeoHookeanLambda = 600, 
-#                         NeoHookeanDamping = 0.001,
-#                         # useMassSpring=1, 
-#                         # useBendingSprings=1, 
-#                         # springElasticStiffness=1,
-#                         # springDampingStiffness=1,
-#                         # springBendingStiffness=1,
-#                         useSelfCollision = 1, 
-#                         frictionCoeff = .5, 
-#                         collisionMargin = 0.001,
-#                         useFaceContact=1,)
-# print('!!!!!!!!!', (p.getMeshData(ballId)[1][0]))
+basePosition = [0,0,2]
+ballId = p.loadSoftBody("models/deformable_ball/ball.obj", 
+                        simFileName = "models/deformable_ball/ball.vtk", 
+                        basePosition = basePosition,
+                        scale = 1, mass = .01, 
+                        useNeoHookean = 1, 
+                        NeoHookeanMu = 4, NeoHookeanLambda = 6, 
+                        NeoHookeanDamping = 0.001,
+                        # useMassSpring=1, 
+                        # useBendingSprings=1, 
+                        # springElasticStiffness=1,
+                        # springDampingStiffness=1,
+                        # springBendingStiffness=1,
+                        useSelfCollision = 1, 
+                        frictionCoeff = .5, 
+                        collisionMargin = 0.001,
+                        useFaceContact=1,)
+print('!!!!!!!!!', (p.getMeshData(ballId)[0]))
+print('!!!!!!!!!', (p.getDynamicsInfo(ballId,-1)))
 
 # box_pos = [0, 0, 0]
 # box_id = add_box(box_pos, [5, 5, .1])
@@ -65,15 +66,15 @@ basePosition = [0,0,0]
 #         parentFramePosition=(0, 0, 0),
 #         childFramePosition=(0, 0, 0))
 
-boxId = p.loadURDF("cube.urdf", [0,1,2],useMaximalCoordinates = True)
-clothId = p.loadSoftBody("cloth_z_up.obj", basePosition = [0,0,2], scale = 0.5, mass = 1., useNeoHookean = 0, useBendingSprings=1,useMassSpring=1, springElasticStiffness=40, springDampingStiffness=.1, springDampingAllDirections = 1, useSelfCollision = 0, frictionCoeff = .5, useFaceContact=1)
+# boxId = p.loadURDF("cube.urdf", [0,1,2],useMaximalCoordinates = True)
+# clothId = p.loadSoftBody("cloth_z_up.obj", basePosition = [0,0,2], scale = 0.5, mass = 1., useNeoHookean = 0, useBendingSprings=1,useMassSpring=1, springElasticStiffness=40, springDampingStiffness=.1, springDampingAllDirections = 1, useSelfCollision = 0, frictionCoeff = .5, useFaceContact=1)
 
-p.changeVisualShape(clothId, -1, flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
+# p.changeVisualShape(clothId, -1, flags=p.VISUAL_SHAPE_DOUBLE_SIDED)
 # p.createSoftBodyAnchor(clothId  ,24,-1,-1)
 # p.createSoftBodyAnchor(clothId ,20,-1,-1)
 # p.createSoftBodyAnchor(clothId ,15,boxId,-1, [0.5,-0.5,0])
-p.createSoftBodyAnchor(clothId ,19,boxId,-1, [-0.5,-0.5,0])
-p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
+# p.createSoftBodyAnchor(clothId ,19,boxId,-1, [-0.5,-0.5,0])
+# p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
 
 p.setTimeStep(0.001)
 p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
